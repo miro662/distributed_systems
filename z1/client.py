@@ -1,8 +1,9 @@
 import socket
 import time
-from typing import Tuple
+import threading
+from typing import Tuple, Callable, List
 
-from protocol import ProtocolSocket, Message, MessageType
+from protocol import ProtocolSocket, Message, MessageType, DisconnectedException
 
 
 class Client:
@@ -40,10 +41,32 @@ class Client:
                 break
 
 
+class ClientObserver(threading.Thread):
+    def __init__(
+        self, client: Client, observers: List[Callable[[str], None]] or None = None
+    ):
+        super(ClientObserver, self).__init__()
+        self._client = client
+        self._observers = observers or []
+
+    def run(self) -> None:
+        while True:
+            try:
+                message = self._client.receive_message()
+            except DisconnectedException:
+                break
+
+            for observer in self._observers:
+                observer(message)
+
+
 if __name__ == "__main__":
     client = Client()
     client.connect(("127.0.0.1", 2137), "miro662")
+
+    client_observer = ClientObserver(client, [print])
+    client_observer.start()
+
     while True:
         client.send_message("test")
-        print(client.receive_message())
         time.sleep(1)
