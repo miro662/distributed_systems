@@ -1,14 +1,21 @@
 import functools
+import logging
 import threading
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Callable
 import socket
 
 from protocol import ProtocolSocket, DisconnectedException, MessageType, Message
 
 
+logging.basicConfig(level=logging.DEBUG)
+
+
 class ServerClient:
     def __init__(
-        self, client_socket: socket.socket, client_addr: Tuple[str, int], unregister
+        self,
+        client_socket: socket.socket,
+        client_addr: Tuple[str, int],
+        unregister: Callable,
     ):
         self._thread: threading.Thread or None = None
         self._client_socket = ProtocolSocket(client_socket)
@@ -25,6 +32,7 @@ class ServerClient:
             self._initialize()
             self._handle_messages()
         except DisconnectedException:
+            logging.debug(f"{self._nickname} disconnected")
             self._unregister()
 
     def _initialize(self):
@@ -34,6 +42,10 @@ class ServerClient:
                 break
 
         self._nickname = hello_message.content
+        logging.debug(
+            f"receivied hello message from {self._client_addr}, nickname: {self._nickname}"
+        )
+
         general_client_message = Message(MessageType.GENERAL_CLIENT)
         self._client_socket.send(general_client_message)
 
@@ -43,6 +55,7 @@ class ServerClient:
             if message.message_type != MessageType.MESSAGE_CLIENT_TO_SERVER:
                 continue
 
+            logging.debug(f'message from {self._nickname}: "{message.content}"')
             message_with_nickname = f"[{self._nickname}] {message.content}"
             self._client_socket.send(
                 Message(MessageType.MESSAGE_SERVER_TO_CLIENT, message_with_nickname)
@@ -90,9 +103,11 @@ class Server:
     def listen(self, addr: Tuple[str, int]):
         self._socket.bind(addr)
         self._socket.listen()
+        logging.debug(f"listening on {addr}")
 
         while True:
             client_socket, client_addr = self._socket.accept()
+            logging.debug(f"accepting connection from {client_addr}")
             server_client = self._clients.register_client(client_socket, client_addr)
             server_client.handle()
 

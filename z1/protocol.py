@@ -1,4 +1,5 @@
 import socket
+import threading
 from enum import Enum
 
 
@@ -37,15 +38,19 @@ class Message:
 class ProtocolSocket:
     def __init__(self, sock: socket.socket):
         self._socket = sock
+        self._send_mutex = threading.RLock()
+        self._recv_mutex = threading.RLock()
 
     def send(self, message: Message):
         message_bytes = message.encode()
+        self._send_mutex.acquire()
         sent_total = 0
         while sent_total < len(message_bytes):
             sent = self._socket.send(message_bytes[sent_total:])
             if sent == 0:
                 raise DisconnectedException()
             sent_total += sent
+        self._send_mutex.release()
 
     def recv(self) -> Message:
         cl = int.from_bytes(self._recv_bytes(2), byteorder="big")
@@ -54,6 +59,7 @@ class ProtocolSocket:
 
     def _recv_bytes(self, size: int) -> bytes:
         chunks = []
+        self._recv_mutex.acquire()
         recv_total = 0
         while recv_total < size:
             chunk = self._socket.recv(size - recv_total)
@@ -61,4 +67,8 @@ class ProtocolSocket:
                 raise DisconnectedException()
             chunks.append(chunk)
             recv_total += len(chunk)
+        self._recv_mutex.release()
         return b"".join(chunks)
+
+    def close(self):
+        self._socket.close()
