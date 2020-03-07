@@ -1,5 +1,7 @@
 import socket
+import string
 import time
+import random
 from typing import Tuple
 
 from protocol import ProtocolSocket, Message, MessageType
@@ -17,7 +19,14 @@ if __name__ == "__main__":
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect(("127.0.0.1", 2138))
     s = ProtocolSocket(s)
-
+    s.send(
+        Message(
+            MessageType.HELLO_SERVER,
+            "".join(random.choice(string.ascii_lowercase) for _ in range(16)),
+        )
+    )
+    msg = s.recv()
+    assert msg.message_type == MessageType.GENERAL_CLIENT
     while True:
-        s.send(Message(MessageType.HELLO_SERVER, "test message"))
+        s.send(Message(MessageType.MESSAGE_CLIENT_TO_SERVER, "test message"))
         time.sleep(1)

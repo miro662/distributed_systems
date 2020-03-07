@@ -14,7 +14,7 @@ class DisconnectedException(BaseException):
 
 
 class Message:
-    def __init__(self, message_type: MessageType, content: str):
+    def __init__(self, message_type: MessageType, content: str = ""):
         self.message_type = message_type
         self.content = content
 

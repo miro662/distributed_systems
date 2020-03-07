@@ -15,7 +15,6 @@
 
 ### `MT=0` Hello server
 First packet sent from client to server. Content = UTF8-encoded nickname. 
-If not sent in 30 seconds, server will close connection
 
 ### `MT=1` General Client
 Sent by server to client. No content. 

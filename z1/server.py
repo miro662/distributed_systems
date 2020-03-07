@@ -4,7 +4,7 @@ from time import sleep
 from typing import Tuple, Dict
 import socket
 
-from protocol import ProtocolSocket, DisconnectedException
+from protocol import ProtocolSocket, DisconnectedException, MessageType, Message
 
 
 class ServerClient:
@@ -15,19 +15,31 @@ class ServerClient:
         self._client_socket = ProtocolSocket(client_socket)
         self._client_addr = client_addr
         self._unregister = unregister
+        self._nickname = "?"
 
     def handle(self):
         self._thread = threading.Thread(target=self._handle)
         self._thread.start()
 
     def _handle(self):
+        self._initialize()
         while True:
             try:
                 message = self._client_socket.recv()
-                print(repr(message))
+                print(self._nickname + ": " + repr(message))
             except DisconnectedException:
                 self._unregister()
                 break
+
+    def _initialize(self):
+        while True:
+            hello_message = self._client_socket.recv()
+            if hello_message.message_type == MessageType.HELLO_SERVER:
+                break
+
+        self._nickname = hello_message.content
+        general_client_message = Message(MessageType.GENERAL_CLIENT)
+        self._client_socket.send(general_client_message)
 
 
 class ClientsList:
