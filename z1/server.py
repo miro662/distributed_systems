@@ -4,11 +4,15 @@ from time import sleep
 from typing import Tuple, Dict
 import socket
 
+from protocol import ProtocolSocket, DisconnectedException
+
 
 class ServerClient:
-    def __init__(self, client_socket: socket.socket, client_addr: Tuple[str, int], unregister):
+    def __init__(
+        self, client_socket: socket.socket, client_addr: Tuple[str, int], unregister
+    ):
         self._thread: threading.Thread or None = None
-        self._client_socket = client_socket
+        self._client_socket = ProtocolSocket(client_socket)
         self._client_addr = client_addr
         self._unregister = unregister
 
@@ -17,10 +21,13 @@ class ServerClient:
         self._thread.start()
 
     def _handle(self):
-        for x in range(3):
-            print('xd')
-            sleep(1)
-        self._unregister()
+        while True:
+            try:
+                message = self._client_socket.recv()
+                print(repr(message))
+            except DisconnectedException:
+                self._unregister()
+                break
 
 
 class ClientsList:
@@ -35,8 +42,12 @@ class ClientsList:
             yield value
         self._clients_list_mutex.release()
 
-    def register_client(self, client_socket: socket.socket, client_addr: Tuple[str, int]) -> ServerClient:
-        unregister_function = functools.partial(self.unregister_client, self._next_client_id)
+    def register_client(
+        self, client_socket: socket.socket, client_addr: Tuple[str, int]
+    ) -> ServerClient:
+        unregister_function = functools.partial(
+            self.unregister_client, self._next_client_id
+        )
         server_client = ServerClient(client_socket, client_addr, unregister_function)
 
         self._clients_list_mutex.acquire()
@@ -46,9 +57,9 @@ class ClientsList:
 
         return server_client
 
-    def unregister_client(self, id: int):
+    def unregister_client(self, client_id: int):
         self._clients_list_mutex.acquire()
-        del self._clients[id]
+        del self._clients[client_id]
         self._clients_list_mutex.release()
 
 
