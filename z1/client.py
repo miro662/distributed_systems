@@ -17,7 +17,7 @@ class Client:
 
 if __name__ == "__main__":
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect(("127.0.0.1", 2138))
+    s.connect(("127.0.0.1", 2137))
     s = ProtocolSocket(s)
     s.send(
         Message(
@@ -28,5 +28,7 @@ if __name__ == "__main__":
     msg = s.recv()
     assert msg.message_type == MessageType.GENERAL_CLIENT
     while True:
-        s.send(Message(MessageType.MESSAGE_CLIENT_TO_SERVER, "test message"))
         time.sleep(1)
+        s.send(Message(MessageType.MESSAGE_CLIENT_TO_SERVER, "test message"))
+        msg = s.recv()
+        print(msg.content)

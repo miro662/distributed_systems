@@ -1,6 +1,5 @@
 import functools
 import threading
-from time import sleep
 from typing import Tuple, Dict
 import socket
 
@@ -22,14 +21,11 @@ class ServerClient:
         self._thread.start()
 
     def _handle(self):
-        self._initialize()
-        while True:
-            try:
-                message = self._client_socket.recv()
-                print(self._nickname + ": " + repr(message))
-            except DisconnectedException:
-                self._unregister()
-                break
+        try:
+            self._initialize()
+            self._handle_messages()
+        except DisconnectedException:
+            self._unregister()
 
     def _initialize(self):
         while True:
@@ -40,6 +36,17 @@ class ServerClient:
         self._nickname = hello_message.content
         general_client_message = Message(MessageType.GENERAL_CLIENT)
         self._client_socket.send(general_client_message)
+
+    def _handle_messages(self):
+        while True:
+            message = self._client_socket.recv()
+            if message.message_type != MessageType.MESSAGE_CLIENT_TO_SERVER:
+                continue
+
+            message_with_nickname = f"[{self._nickname}] {message.content}"
+            self._client_socket.send(
+                Message(MessageType.MESSAGE_SERVER_TO_CLIENT, message_with_nickname)
+            )
 
 
 class ClientsList:
@@ -92,4 +99,4 @@ class Server:
 
 if __name__ == "__main__":
     server = Server()
-    server.listen((socket.gethostname(), 2138))
+    server.listen((socket.gethostname(), 2137))
