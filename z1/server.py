@@ -1,7 +1,8 @@
 import functools
 import logging
+import sys
 import threading
-from typing import Tuple, Dict, Callable
+from typing import Tuple, Dict, Callable, List
 import socket
 
 from protocol import ProtocolSocket, DisconnectedException, MessageType, Message
@@ -16,7 +17,7 @@ class ServerClient:
         client_socket: socket.socket,
         client_addr: Tuple[str, int],
         unregister: Callable,
-        send_message_to_all: Callable[[str], None]
+        send_message_to_all: Callable[[str, List['ServerClient']], None]
     ):
         self._thread: threading.Thread or None = None
         self._client_socket = ProtocolSocket(client_socket)
@@ -61,7 +62,7 @@ class ServerClient:
             logging.debug(f'message from {self._nickname}: "{message}"')
             message_with_nickname = f"[{self._nickname}] {message}"
 
-            self._send_message_to_all(message_with_nickname)
+            self._send_message_to_all(message_with_nickname, [self])
 
     def send_message(self, message):
         self._client_socket.send(
@@ -101,9 +102,10 @@ class ClientsList:
         del self._clients[client_id]
         self._clients_list_mutex.release()
 
-    def send_message_to_all(self, message: str):
+    def send_message_to_all(self, message: str, do_not_send_to: List[ServerClient] = None):
         for client in self._clients.values():
-            client.send_message(message)
+            if do_not_send_to is None or client not in do_not_send_to:
+                client.send_message(message)
 
 
 class Server:
@@ -124,5 +126,10 @@ class Server:
 
 
 if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print(f'usage: {sys.argv[0]} ip port', file=sys.stderr)
+        sys.exit(1)
+    program_name, ip, port_str = sys.argv
+
     server = Server()
-    server.listen((socket.gethostname(), 2135))
+    server.listen((ip, int(port_str)))

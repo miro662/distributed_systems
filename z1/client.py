@@ -1,23 +1,15 @@
 import select
 import socket
-import string
 import sys
-import time
-import threading
-import random
-from typing import Tuple, Callable, List
+from typing import Tuple
 
 from protocol import ProtocolSocket, Message, MessageType, DisconnectedException
 
 
-class Client:
-    def __init__(self, s = None):
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) or s
+class ClientProtocolWrapper:
+    def __init__(self, sock):
+        self._socket = sock
         self._protocol_socket = ProtocolSocket(self._socket)
-
-    def connect(self, addr: Tuple[str, int], nickname: str):
-        self._socket.connect(addr)
-        self._initialize(nickname)
 
     def send_message(self, message: str):
         message = Message(MessageType.MESSAGE_CLIENT_TO_SERVER, message)
@@ -30,6 +22,29 @@ class Client:
                 continue
 
             return message.content
+
+
+class Client:
+    def __init__(self):
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._protocol_socket = ProtocolSocket(self._socket)
+        self._protocol_wrapper = ClientProtocolWrapper(self._socket)
+        self.nickname = "?"
+
+    def connect(self, addr: Tuple[str, int], nickname: str):
+        self._socket.connect(addr)
+        self.nickname = nickname
+        self._initialize(nickname)
+
+    @property
+    def socket(self):
+        return self._socket
+
+    def send_message(self, message: str):
+        self._protocol_wrapper.send_message(message)
+
+    def receive_message(self) -> str:
+        return self._protocol_wrapper.receive_message()
 
     def _initialize(self, nickname: str):
         self._send_hello_server_message(nickname)
@@ -44,52 +59,53 @@ class Client:
             if message.message_type == MessageType.GENERAL_CLIENT:
                 break
 
-    @property
-    def socket(self):
-        return self._socket
 
-
-class ClientObserver(threading.Thread):
-    def __init__(
-        self, client: Client, observers: List[Callable[[str], None]] or None = None
-    ):
-        super(ClientObserver, self).__init__()
+class ClientUI:
+    def __init__(self, client):
         self._client = client
-        self._observers = observers or []
 
-    def run(self) -> None:
+    def main(self):
+        self._prompt()
         while True:
-            try:
-                message = self._client.receive_message()
-            except DisconnectedException:
-                break
+            read_sockets = [self._client.socket, sys.stdin]
+            r, w, e = select.select(read_sockets, [], [])
+            for s in r:
+                if s == self._client.socket:
+                    self._print_message_from(s)
+                else:
+                    self._read_and_send_message()
 
-            for observer in self._observers:
-                observer(message)
+    def _print_message_from(self, sock):
+        wrapper = ClientProtocolWrapper(sock)
+        sys.stdout.write('\r')
+        message = wrapper.receive_message()
+        sys.stdout.write(message + "\n")
+        self._prompt()
 
+    def _read_and_send_message(self):
+        message = sys.stdin.readline().rstrip()
+        self._client.send_message(message)
+        self._prompt()
 
-def prompt():
-    sys.stdout.write('> ')
-    sys.stdout.flush()
+    def _prompt(self):
+        sys.stdout.write(f'[{self._client.nickname}] ')
+        sys.stdout.flush()
 
 
 if __name__ == "__main__":
-    client = Client()
-    client.connect(("127.0.0.1", 2135), ''.join(random.choice(string.digits) for _ in range(10)))
+    if len(sys.argv) != 3:
+        print(f'usage: {sys.argv[0]} ip port', file=sys.stderr)
+        sys.exit(1)
+    program_name, ip, port_str = sys.argv
+    nickname = input('Nickname: ')
 
-    prompt()
-    while True:
-        read_sockets = [client.socket, sys.stdin]
-        r, w, e = select.select(read_sockets, [], [])
-        for s in r:
-            if s == client.socket:
-                c = Client(s)
-                sys.stdout.write('\r')
-                message = client.receive_message()
-                sys.stdout.write(message + "\n")
-                prompt()
-            else:
-                message = sys.stdin.readline().rstrip()
-                client.send_message(message)
-                prompt()
+    client = Client()
+    client.connect((ip, int(port_str)), nickname)
+
+    ui = ClientUI(client)
+    try:
+        ui.main()
+    except DisconnectedException:
+        print("Server closed")
+        sys.exit(1)
 
