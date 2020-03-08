@@ -2,6 +2,7 @@ import functools
 import logging
 import sys
 import threading
+from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Tuple, Dict, Callable, List
 import socket
 
@@ -19,7 +20,6 @@ class ServerClient:
         unregister: Callable,
         send_message_to_all: Callable[[str, List['ServerClient']], None]
     ):
-        self._thread: threading.Thread or None = None
         self._client_socket = ProtocolSocket(client_socket)
         self._client_addr = client_addr
         self._unregister = unregister
@@ -27,10 +27,6 @@ class ServerClient:
         self._send_message_to_all = send_message_to_all
 
     def handle(self):
-        self._thread = threading.Thread(target=self._handle)
-        self._thread.start()
-
-    def _handle(self):
         try:
             self._initialize()
             self._handle_messages()
@@ -112,6 +108,7 @@ class Server:
     def __init__(self):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._clients = ClientsList()
+        self._thread_pool = ThreadPoolExecutor(max_workers=4)
 
     def listen(self, addr: Tuple[str, int]):
         self._socket.bind(addr)
@@ -122,7 +119,7 @@ class Server:
             client_socket, client_addr = self._socket.accept()
             logging.debug(f"accepting connection from {client_addr}")
             server_client = self._clients.register_client(client_socket, client_addr)
-            server_client.handle()
+            self._thread_pool.submit(server_client.handle)
 
 
 if __name__ == "__main__":
