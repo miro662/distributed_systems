@@ -3,7 +3,13 @@ import socket
 import sys
 from typing import Tuple
 
-from protocol import ProtocolSocket, Message, MessageType, DisconnectedException, MAX_UDP_PACKET_SIZE
+from protocol import (
+    ProtocolSocket,
+    Message,
+    MessageType,
+    DisconnectedException,
+    MAX_UDP_PACKET_SIZE,
+)
 
 
 class ClientProtocolWrapper:
@@ -25,24 +31,17 @@ class ClientProtocolWrapper:
 
 
 class Client:
-    MULTICAST_ADDR = ('224.0.0.1', 2138)
+    MULTICAST_ADDR = ("224.0.0.1", 2138)
 
     def __init__(self, ascii_art):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._protocol_socket = ProtocolSocket(self._socket)
         self._protocol_wrapper = ClientProtocolWrapper(self._socket)
-        self._ascii_art = bytes(ascii_art, encoding='utf-8')
+        self._ascii_art = bytes(ascii_art, encoding="utf-8")
         self.nickname = "?"
 
-        self._multicast_send_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self._multicast_send_socket.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, (1).to_bytes(1, 'little'))
-
-        self._multicast_recv_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        membership = socket.inet_aton(self.MULTICAST_ADDR[0]) + socket.inet_aton('0.0.0.0')
-        self._multicast_recv_socket.setsockopt(socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, membership)
-        self._multicast_recv_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self._multicast_recv_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
+        self._establish_multicast()
 
     def connect(self, addr: Tuple[str, int], nickname: str):
         self._socket.connect(addr)
@@ -50,7 +49,7 @@ class Client:
         tcp_socket_addr = self._socket.getsockname()
         self._udp_socket.bind(tcp_socket_addr)
         self._udp_socket.connect(addr)
-        self._multicast_recv_socket.bind(('0.0.0.0', 2138))
+        self._multicast_recv_socket.bind(("0.0.0.0", 2138))
 
         self.nickname = nickname
         self._initialize(nickname)
@@ -92,6 +91,25 @@ class Client:
             if message.message_type == MessageType.GENERAL_CLIENT:
                 break
 
+    def _establish_multicast(self):
+        self._multicast_send_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self._multicast_send_socket.setsockopt(
+            socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, (1).to_bytes(1, "little")
+        )
+        self._multicast_recv_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        membership = socket.inet_aton(self.MULTICAST_ADDR[0]) + socket.inet_aton(
+            "0.0.0.0"
+        )
+        self._multicast_recv_socket.setsockopt(
+            socket.IPPROTO_IP, socket.IP_ADD_MEMBERSHIP, membership
+        )
+        self._multicast_recv_socket.setsockopt(
+            socket.SOL_SOCKET, socket.SO_REUSEADDR, 1
+        )
+        self._multicast_recv_socket.setsockopt(
+            socket.SOL_SOCKET, socket.SO_REUSEPORT, 1
+        )
+
 
 class ClientUI:
     def __init__(self, client):
@@ -100,7 +118,12 @@ class ClientUI:
     def main(self):
         self._prompt()
         while True:
-            read_sockets = [self._client.socket, self._client.udp_socket, self._client.multicast_recv_socket, sys.stdin]
+            read_sockets = [
+                self._client.socket,
+                self._client.udp_socket,
+                self._client.multicast_recv_socket,
+                sys.stdin,
+            ]
             r, w, e = select.select(read_sockets, [], [])
             for s in r:
                 if s == self._client.socket:
@@ -112,42 +135,42 @@ class ClientUI:
 
     def _print_message_from(self, sock):
         wrapper = ClientProtocolWrapper(sock)
-        sys.stdout.write('\r')
+        sys.stdout.write("\r")
         message = wrapper.receive_message()
         sys.stdout.write(message + "\n")
         self._prompt()
 
     def _print_message_from_udp(self, sock):
-        sys.stdout.write('\r')
+        sys.stdout.write("\r")
         message, _ = sock.recvfrom(MAX_UDP_PACKET_SIZE)
-        message_str = str(message, encoding='utf-8')
+        message_str = str(message, encoding="utf-8")
         sys.stdout.write(message_str + "\n")
         self._prompt()
 
     def _read_and_send_message(self):
         message = sys.stdin.readline().rstrip()
-        if message == 'U':
+        if message == "U":
             self._client.send_ascii_art()
-        elif message == 'M':
+        elif message == "M":
             self._client.send_ascii_art_multicast()
         else:
             self._client.send_message(message)
         self._prompt()
 
     def _prompt(self):
-        sys.stdout.write(f'[{self._client.nickname}] ')
+        sys.stdout.write(f"[{self._client.nickname}] ")
         sys.stdout.flush()
 
 
 if __name__ == "__main__":
-    with open('asciiart.txt', 'r') as f:
-        asciiart = ''.join(f.readlines())
+    with open("asciiart.txt", "r") as f:
+        asciiart = "".join(f.readlines())
 
     if len(sys.argv) != 3:
-        print(f'usage: {sys.argv[0]} ip port', file=sys.stderr)
+        print(f"usage: {sys.argv[0]} ip port", file=sys.stderr)
         sys.exit(1)
     program_name, ip, port_str = sys.argv
-    nickname = input('Nickname: ')
+    nickname = input("Nickname: ")
 
     client = Client(asciiart)
     client.connect((ip, int(port_str)), nickname)

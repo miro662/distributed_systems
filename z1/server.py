@@ -7,7 +7,13 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Tuple, Dict, Callable, List
 import socket
 
-from protocol import ProtocolSocket, DisconnectedException, MessageType, Message, MAX_UDP_PACKET_SIZE
+from protocol import (
+    ProtocolSocket,
+    DisconnectedException,
+    MessageType,
+    Message,
+    MAX_UDP_PACKET_SIZE,
+)
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -18,7 +24,7 @@ class ServerClient:
         client_socket: socket.socket,
         client_addr: Tuple[str, int],
         unregister: Callable,
-        send_message_to_all: Callable[[str, List['ServerClient']], None]
+        send_message_to_all: Callable[[str, List["ServerClient"]], None],
     ):
         self._client_socket = ProtocolSocket(client_socket)
         self.client_addr = client_addr
@@ -62,9 +68,7 @@ class ServerClient:
             self._send_message_to_all(message_with_nickname, [self])
 
     def send_message(self, message):
-        self._client_socket.send(
-            Message(MessageType.MESSAGE_SERVER_TO_CLIENT, message)
-        )
+        self._client_socket.send(Message(MessageType.MESSAGE_SERVER_TO_CLIENT, message))
 
     def close(self):
         self._client_socket.close()
@@ -88,7 +92,9 @@ class ClientsList:
         unregister_function = functools.partial(
             self.unregister_client, self._next_client_id
         )
-        server_client = ServerClient(client_socket, client_addr, unregister_function, self.send_message_to_all)
+        server_client = ServerClient(
+            client_socket, client_addr, unregister_function, self.send_message_to_all
+        )
 
         self._clients_list_mutex.acquire()
         self._clients[self._next_client_id] = server_client
@@ -102,7 +108,9 @@ class ClientsList:
         del self._clients[client_id]
         self._clients_list_mutex.release()
 
-    def send_message_to_all(self, message: str, do_not_send_to: List[ServerClient] = None):
+    def send_message_to_all(
+        self, message: str, do_not_send_to: List[ServerClient] = None
+    ):
         for client in self._clients.values():
             if do_not_send_to is None or client not in do_not_send_to:
                 client.send_message(message)
@@ -134,7 +142,7 @@ class Server:
                     self._handle_udp(sock)
 
     def _handle_udp(self, sock):
-        logging.debug('received UDP packet')
+        logging.debug("received UDP packet")
         ascii_art, addr = sock.recvfrom(MAX_UDP_PACKET_SIZE)
         for client in self._clients:
             if addr != client.client_addr:
@@ -147,7 +155,7 @@ class Server:
         self._thread_pool.submit(server_client.handle)
 
     def _close(self):
-        logging.debug('closing server')
+        logging.debug("closing server")
         for client in self._clients:
             client.close()
         self._tcp_socket.close()
@@ -157,7 +165,7 @@ class Server:
 
 if __name__ == "__main__":
     if len(sys.argv) != 3:
-        print(f'usage: {sys.argv[0]} ip port', file=sys.stderr)
+        print(f"usage: {sys.argv[0]} ip port", file=sys.stderr)
         sys.exit(1)
     program_name, ip, port_str = sys.argv
 
