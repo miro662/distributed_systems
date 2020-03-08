@@ -33,6 +33,7 @@ class ServerClient:
         except DisconnectedException:
             logging.debug(f"{self._nickname} disconnected")
             self._unregister()
+            self._client_socket.close()
 
     def _initialize(self):
         while True:
@@ -64,6 +65,9 @@ class ServerClient:
         self._client_socket.send(
             Message(MessageType.MESSAGE_SERVER_TO_CLIENT, message)
         )
+
+    def close(self):
+        self._client_socket.close()
 
 
 class ClientsList:
@@ -118,7 +122,11 @@ class Server:
         logging.debug(f"listening on {addr}")
 
         while True:
-            r, w, e = select.select([self._tcp_socket, self._udp_socket], [], [])
+            try:
+                r, w, e = select.select([self._tcp_socket, self._udp_socket], [], [])
+            except KeyboardInterrupt:
+                self._close()
+
             for sock in r:
                 if sock == self._tcp_socket:
                     self._handle_tcp_connection(sock)
@@ -137,6 +145,14 @@ class Server:
         logging.debug(f"accepting connection from {client_addr}")
         server_client = self._clients.register_client(client_socket, client_addr)
         self._thread_pool.submit(server_client.handle)
+
+    def _close(self):
+        logging.debug('closing server')
+        for client in self._clients:
+            client.close()
+        self._tcp_socket.close()
+        self._udp_socket.close()
+        sys.exit(0)
 
 
 if __name__ == "__main__":
