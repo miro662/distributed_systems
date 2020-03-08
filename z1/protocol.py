@@ -46,7 +46,10 @@ class ProtocolSocket:
         self._send_mutex.acquire()
         sent_total = 0
         while sent_total < len(message_bytes):
-            sent = self._socket.send(message_bytes[sent_total:])
+            try:
+                sent = self._socket.send(message_bytes[sent_total:])
+            except BrokenPipeError:
+                raise DisconnectedException()
             if sent == 0:
                 raise DisconnectedException()
             sent_total += sent
@@ -72,3 +75,6 @@ class ProtocolSocket:
 
     def close(self):
         self._socket.close()
+
+    def fileno(self):
+        return self._socket.fileno()
