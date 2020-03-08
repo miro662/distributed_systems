@@ -1,5 +1,6 @@
 import functools
 import logging
+import select
 import sys
 import threading
 from concurrent.futures.thread import ThreadPoolExecutor
@@ -21,7 +22,7 @@ class ServerClient:
         send_message_to_all: Callable[[str, List['ServerClient']], None]
     ):
         self._client_socket = ProtocolSocket(client_socket)
-        self._client_addr = client_addr
+        self.client_addr = client_addr
         self._unregister = unregister
         self._nickname = "?"
         self._send_message_to_all = send_message_to_all
@@ -42,7 +43,7 @@ class ServerClient:
 
         self._nickname = hello_message.content
         logging.debug(
-            f"receivied hello message from {self._client_addr}, nickname: {self._nickname}"
+            f"receivied hello message from {self.client_addr}, nickname: {self._nickname}"
         )
 
         general_client_message = Message(MessageType.GENERAL_CLIENT)
@@ -106,20 +107,31 @@ class ClientsList:
 
 class Server:
     def __init__(self):
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self._clients = ClientsList()
         self._thread_pool = ThreadPoolExecutor(max_workers=4)
 
     def listen(self, addr: Tuple[str, int]):
-        self._socket.bind(addr)
-        self._socket.listen()
+        self._tcp_socket.bind(addr)
+        self._udp_socket.bind(addr)
+        self._tcp_socket.listen()
         logging.debug(f"listening on {addr}")
 
         while True:
-            client_socket, client_addr = self._socket.accept()
-            logging.debug(f"accepting connection from {client_addr}")
-            server_client = self._clients.register_client(client_socket, client_addr)
-            self._thread_pool.submit(server_client.handle)
+            r, w, e = select.select([self._tcp_socket, self._udp_socket], [], [])
+            for sock in r:
+                if sock == self._tcp_socket:
+                    client_socket, client_addr = sock.accept()
+                    logging.debug(f"accepting connection from {client_addr}")
+                    server_client = self._clients.register_client(client_socket, client_addr)
+                    self._thread_pool.submit(server_client.handle)
+                else:
+                    logging.debug('received UDP packet')
+                    ascii_art, addr = sock.recvfrom(4096)
+                    for client in self._clients:
+                        if addr != client.client_addr:
+                            sock.sendto(ascii_art, client.client_addr)
 
 
 if __name__ == "__main__":
