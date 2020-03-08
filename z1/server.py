@@ -7,8 +7,7 @@ from concurrent.futures.thread import ThreadPoolExecutor
 from typing import Tuple, Dict, Callable, List
 import socket
 
-from protocol import ProtocolSocket, DisconnectedException, MessageType, Message
-
+from protocol import ProtocolSocket, DisconnectedException, MessageType, Message, MAX_UDP_PACKET_SIZE
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -122,16 +121,22 @@ class Server:
             r, w, e = select.select([self._tcp_socket, self._udp_socket], [], [])
             for sock in r:
                 if sock == self._tcp_socket:
-                    client_socket, client_addr = sock.accept()
-                    logging.debug(f"accepting connection from {client_addr}")
-                    server_client = self._clients.register_client(client_socket, client_addr)
-                    self._thread_pool.submit(server_client.handle)
+                    self._handle_tcp_connection(sock)
                 else:
-                    logging.debug('received UDP packet')
-                    ascii_art, addr = sock.recvfrom(4096)
-                    for client in self._clients:
-                        if addr != client.client_addr:
-                            sock.sendto(ascii_art, client.client_addr)
+                    self._handle_udp(sock)
+
+    def _handle_udp(self, sock):
+        logging.debug('received UDP packet')
+        ascii_art, addr = sock.recvfrom(MAX_UDP_PACKET_SIZE)
+        for client in self._clients:
+            if addr != client.client_addr:
+                sock.sendto(ascii_art, client.client_addr)
+
+    def _handle_tcp_connection(self, sock):
+        client_socket, client_addr = sock.accept()
+        logging.debug(f"accepting connection from {client_addr}")
+        server_client = self._clients.register_client(client_socket, client_addr)
+        self._thread_pool.submit(server_client.handle)
 
 
 if __name__ == "__main__":

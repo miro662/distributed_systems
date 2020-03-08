@@ -78,3 +78,6 @@ class ProtocolSocket:
 
     def fileno(self):
         return self._socket.fileno()
+
+
+MAX_UDP_PACKET_SIZE = 4096
