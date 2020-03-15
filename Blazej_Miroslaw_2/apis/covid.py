@@ -2,7 +2,7 @@ import json
 from dataclasses import dataclass
 from functools import reduce
 from pprint import pprint
-from typing import Iterable, Dict
+from typing import Iterable, Dict, Tuple, Callable
 
 import urllib3
 
@@ -83,6 +83,23 @@ def get_world_data_from_all_endpoint() -> CovidData:
     """
     json_data = _get_covid_all_data()
     return CovidData.from_api_data(json_data)
+
+
+SELECTORS = {
+    'cases': lambda d: d.cases,
+    'deaths': lambda d: d.deaths,
+    'recovered': lambda d: d.recovered,
+    'mortality': lambda d: d.mortality,
+    'recoverability': lambda d: d.recoverability
+}
+
+
+def get_country_by_selector(selector: Callable[[CovidData], int or float], min_cases: int = 0) -> Tuple[str, CovidData]:
+    json_data = _get_covid_countries_data()
+    covid_data = [(country_data['country'], CovidData.from_api_data(country_data)) for country_data in json_data]
+    filtered_covid_data = (x for x in covid_data if x[1].cases > min_cases)
+    most_cases = max(filtered_covid_data, key=lambda x: selector(x[1]))
+    return most_cases
 
 
 def _get_covid_countries_data():
