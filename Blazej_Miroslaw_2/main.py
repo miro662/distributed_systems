@@ -68,7 +68,8 @@ def main():
         address = request.form.get("address")
         if address:
             geocoded_country = google_maps.get_country_by_geocode(address)
-            countries.append(geocoded_country)
+            if geocoded_country:
+                countries.append(geocoded_country)
 
         lat_str, lng_str = request.form.get("lat"), request.form.get("lng")
         if lat_str and lng_str:
@@ -80,7 +81,8 @@ def main():
             reverse_geocoded_country = google_maps.get_country_by_reverse_geocode(
                 lat, lng
             )
-            countries.append(reverse_geocoded_country)
+            if reverse_geocoded_country:
+                countries.append(reverse_geocoded_country)
 
         for country in countries:
             world_data_from_country = covid.get_data_in_country(country)

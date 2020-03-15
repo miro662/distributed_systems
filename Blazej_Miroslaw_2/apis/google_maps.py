@@ -17,12 +17,17 @@ def get_country_by_reverse_geocode(lat: float, lng: float) -> str:
     return _get_country_from_geocode(f"&latlng={lat},{lng}")
 
 
-def _get_country_from_geocode(params: str) -> str:
+def _get_country_from_geocode(params: str) -> str or None:
     http = urllib3.PoolManager()
     google_maps_response = http.request("GET", GOOGLE_MAPS_GEOCODING_URL + params)
     response_json = json.loads(google_maps_response.data)
     address_components = response_json["results"][0]["address_components"]
-    country_component = next(
-        component for component in address_components if "country" in component["types"]
-    )
+    try:
+        country_component = next(
+            component
+            for component in address_components
+            if "country" in component["types"]
+        )
+    except StopIteration:
+        return None
     return country_component["long_name"]
