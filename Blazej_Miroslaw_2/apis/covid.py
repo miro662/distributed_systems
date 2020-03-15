@@ -102,6 +102,7 @@ def get_country_by_selector(selector: Callable[[CovidData], int or float], min_c
     return most_cases
 
 
+COVID_COUNTRIES_DATA = None
 def _get_covid_countries_data():
     return __get_json_data(COUNTRIES_ENDPOINT_URL)
 

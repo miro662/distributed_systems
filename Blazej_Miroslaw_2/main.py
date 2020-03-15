@@ -1,6 +1,6 @@
 import flask
 
-from apis import covid
+from apis import covid, google_maps
 
 app = flask.Flask(__name__)
 
@@ -30,9 +30,11 @@ def get_html(data_to_display: dict) -> str:
             {unordered_list_content}
         </ul>
         <form action="/" method="post">
-            <div>Country: <select name="country">{countries_options}</select></div>
-            <div>Selector: <select name="selector">{selectors_options}</select></div>
+            <div>Country: <select name="country"><option value="">-----</option>{countries_options}</select></div>
+            <div>Selector: <select name="selector"><option value="">-----</option>{selectors_options}</select></div>
             <div>Min cases: <input name="min_cases" /></div>
+            <div>Address: <input name="address" /></div>
+            <div>Geo coords: <input name="lat" /><input name="lng" /></div>
             <div><input type="submit" /></div>
         </form>
     </body>
@@ -53,11 +55,30 @@ def main():
             'matches': matches,
         }
 
+        countries = []
         selected_country = request.form.get('country')
         if selected_country:
-            world_data_from_country = covid.get_data_in_country(selected_country)
+            countries.append(selected_country)
+
+        address = request.form.get('address')
+        if address:
+            geocoded_country = google_maps.get_country_by_geocode(address)
+            countries.append(geocoded_country)
+
+        lat_str, lng_str = request.form.get('lat'), request.form.get('lng')
+        if lat_str and lng_str:
+            try:
+                lat, lng = float(lat_str), float(lng_str)
+            except ValueError:
+                flask.abort(400)
+
+            reverse_geocoded_country = google_maps.get_country_by_reverse_geocode(lat, lng)
+            countries.append(reverse_geocoded_country)
+
+        for country in countries:
+            world_data_from_country = covid.get_data_in_country(country)
             if world_data_from_country is not None:
-                context[selected_country] = display_covid_data(world_data_from_country)
+                context[country] = display_covid_data(world_data_from_country)
 
         selector_name = request.form.get('selector')
         if selector_name:
