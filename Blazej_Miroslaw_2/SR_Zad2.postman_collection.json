@@ -1,0 +1,332 @@
+{
+	"info": {
+		"_postman_id": "3d363c8c-c72a-4b39-b630-97fcb3d019f2",
+		"name": "SR_Zad2",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "COVID API - countries",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": ""
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "COVID API - total",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": ""
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "My app - main page",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "http://{{HOST}}/",
+					"protocol": "http",
+					"host": [
+						"{{HOST}}"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "My app - data in country",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "country",
+							"value": "Poland",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://{{HOST}}/",
+					"protocol": "http",
+					"host": [
+						"{{HOST}}"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "My app - data by geocoding",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "country",
+							"value": "Russia",
+							"type": "text"
+						},
+						{
+							"key": "address",
+							"value": "Kawiory 23, Kraków",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://{{HOST}}/",
+					"protocol": "http",
+					"host": [
+						"{{HOST}}"
+					],
+					"path": [
+						""
+					],
+					"query": [
+						{
+							"key": "",
+							"value": ""
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "My app - data by lat/lng",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "country",
+							"value": "Russia",
+							"type": "text"
+						},
+						{
+							"key": "address",
+							"value": "Kawiory 23, Kraków",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://{{HOST}}/",
+					"protocol": "http",
+					"host": [
+						"{{HOST}}"
+					],
+					"path": [
+						""
+					],
+					"query": [
+						{
+							"key": "",
+							"value": ""
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "My app - data in country that does not exist",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "country",
+							"value": "San Escobar",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "http://{{HOST}}/",
+					"protocol": "http",
+					"host": [
+						"{{HOST}}"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "My app - selector",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "selector",
+							"value": "recoverability",
+							"type": "text"
+						},
+						{
+							"key": "min_cases",
+							"value": "100",
+							"type": "text",
+							"disabled": true
+						}
+					]
+				},
+				"url": {
+					"raw": "http://{{HOST}}/",
+					"protocol": "http",
+					"host": [
+						"{{HOST}}"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "My app - selector + min cases",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "selector",
+							"value": "recoverability",
+							"type": "text"
+						},
+						{
+							"key": "min_cases",
+							"value": "100",
+							"type": "text",
+							"disabled": true
+						}
+					]
+				},
+				"url": {
+					"raw": "http://{{HOST}}/",
+					"protocol": "http",
+					"host": [
+						"{{HOST}}"
+					],
+					"path": [
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Google - geocode",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://maps.googleapis.com/maps/api/geocode/json?address=Kawiory 23, Kraków&key={{GOOGLE_API_KEY}}",
+					"protocol": "https",
+					"host": [
+						"maps",
+						"googleapis",
+						"com"
+					],
+					"path": [
+						"maps",
+						"api",
+						"geocode",
+						"json"
+					],
+					"query": [
+						{
+							"key": "address",
+							"value": "Kawiory 23, Kraków"
+						},
+						{
+							"key": "key",
+							"value": "{{GOOGLE_API_KEY}}"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Google - reverse geocode",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": ""
+				}
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "07fe5fbc-d77f-4fb0-b7d2-28a97a6e1e44",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "df5b4b25-e067-4c8e-9cd0-e9842550cd6d",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "0ffcc48e-da65-40c9-bbec-d29b11fbecde",
+			"key": "HOST",
+			"value": "127.0.0.1:5000",
+			"type": "string"
+		},
+		{
+			"id": "1000a33d-d63c-492f-ba38-aa91d5daa8e1",
+			"key": "GOOGLE_API_KEY",
+			"value": "invaild",
+			"type": "string"
+		}
+	],
+	"protocolProfileBehavior": {}
+}
