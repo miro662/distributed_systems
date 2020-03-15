@@ -21,6 +21,14 @@ class CovidData:
             recovered=api_data['recovered']
         )
 
+    @property
+    def mortality(self):
+        return self.deaths / self.cases
+
+    @property
+    def recoverability(self):
+        return self.recovered / self.cases
+
 
 ALL_ENDPOINT_URL = "https://coronavirus-19-api.herokuapp.com/all"
 COUNTRIES_ENDPOINT_URL = "https://coronavirus-19-api.herokuapp.com/countries"
