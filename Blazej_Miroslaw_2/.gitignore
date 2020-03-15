@@ -1,1 +1,3 @@
 apis/keys.py
+__pycache__
+# .idea/ (enviroment configuration is part of task)
