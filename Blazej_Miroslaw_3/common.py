@@ -9,6 +9,8 @@ def initialize_channel():
     connection = pika.BlockingConnection(pika.ConnectionParameters(host="localhost"))
     channel = connection.channel()
 
-    channel.exchange_declare(exchange=CARRIERS_REQUESTS_EXCHANGE, exchange_type="direct")
+    channel.exchange_declare(
+        exchange=CARRIERS_REQUESTS_EXCHANGE, exchange_type="direct"
+    )
 
-    return channel
+    return connection, channel

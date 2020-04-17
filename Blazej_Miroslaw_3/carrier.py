@@ -10,11 +10,11 @@ class Carrier:
         self._name = name
         self._services = services
 
-        self._channel = initialize_channel()
+        self._connection, self._channel = initialize_channel()
         queue_name = self._initialize_channel()
         self._bind_services(queue_name, services)
         self._channel.basic_consume(
-            queue=queue_name, on_message_callback=self.handle_message, auto_ack=True
+            queue=queue_name, on_message_callback=self._handle_message, auto_ack=True
         )
 
     def start(self):
@@ -24,9 +24,21 @@ class Carrier:
         except KeyboardInterrupt:
             print(f"{self._name} carrier stopped operating")
 
-    def handle_message(self, ch, method, properties, body):
-        message = str(body, encoding='utf-8').split(";")
-        print(f"Recieved {method.routing_key} request from {message[1]}, id = {message[2]}")
+    def _handle_message(self, ch, method, properties, body):
+        message = str(body, encoding="utf-8").split(";")
+        if message[0] == "transfer_request":
+            print(
+                f"Recieved {method.routing_key} request from {message[1]}, id = {message[2]}"
+            )
+            confirmation_message = ("confirmation", message[2])
+            self._channel.basic_publish(
+                exchange="",
+                routing_key=properties.reply_to,
+                properties=pika.BasicProperties(
+                    correlation_id=properties.correlation_id
+                ),
+                body=";".join(confirmation_message),
+            )
 
     def _initialize_channel(self):
         result = self._channel.queue_declare(queue="", exclusive=True)
