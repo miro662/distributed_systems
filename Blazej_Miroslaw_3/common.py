@@ -5,6 +5,7 @@ TRANSFER_TYPES = ["people", "cargo", "satellite"]
 CARRIERS_REQUESTS_EXCHANGE = "carrier_requests"
 CARRIERS_REQUESTS_FANOUT = "carrier_requests_fanout"
 CARRIERS_RESPONSES_EXCHANGE = "carrier_requests"
+CARRIERS_RESPONSES_FANOUT = "carrier_requests_fanout"
 
 def initialize_channel():
     connection = pika.BlockingConnection(pika.ConnectionParameters(host="localhost"))
@@ -22,6 +23,10 @@ def initialize_channel():
         exchange=CARRIERS_RESPONSES_EXCHANGE, exchange_type="direct"
     )
 
+    channel.exchange_declare(
+        exchange=CARRIERS_RESPONSES_FANOUT, exchange_type="fanout"
+    )
+
     for transfer_type in TRANSFER_TYPES:
         channel.queue_declare(queue=transfer_type, durable=True)
         channel.queue_bind(
@@ -32,5 +37,6 @@ def initialize_channel():
         channel.basic_qos(prefetch_count=1)
 
     channel.exchange_bind(CARRIERS_REQUESTS_EXCHANGE, CARRIERS_REQUESTS_FANOUT, '')
+    channel.exchange_bind(CARRIERS_RESPONSES_EXCHANGE, CARRIERS_RESPONSES_FANOUT, '')
 
     return connection, channel

@@ -2,7 +2,7 @@ import sys
 
 import pika
 
-from common import TRANSFER_TYPES, initialize_channel, CARRIERS_RESPONSES_EXCHANGE
+from common import TRANSFER_TYPES, initialize_channel, CARRIERS_RESPONSES_FANOUT
 
 
 class Carrier:
@@ -29,7 +29,7 @@ class Carrier:
             )
             confirmation_message = ("confirmation", message[2])
             self._channel.basic_publish(
-                exchange=CARRIERS_RESPONSES_EXCHANGE,
+                exchange=CARRIERS_RESPONSES_FANOUT,
                 routing_key=properties.reply_to,
                 properties=pika.BasicProperties(
                     correlation_id=properties.correlation_id
