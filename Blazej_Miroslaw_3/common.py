@@ -13,4 +13,13 @@ def initialize_channel():
         exchange=CARRIERS_REQUESTS_EXCHANGE, exchange_type="direct"
     )
 
+    for transfer_type in TRANSFER_TYPES:
+        channel.queue_declare(queue=transfer_type, durable=True)
+        channel.queue_bind(
+            exchange=CARRIERS_REQUESTS_EXCHANGE,
+            queue=transfer_type,
+            routing_key=transfer_type,
+        )
+        channel.basic_qos(prefetch_count=1)
+
     return connection, channel

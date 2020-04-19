@@ -13,9 +13,6 @@ class Carrier:
         self._connection, self._channel = initialize_channel()
         queue_name = self._initialize_channel()
         self._bind_services(queue_name, services)
-        self._channel.basic_consume(
-            queue=queue_name, on_message_callback=self._handle_message, auto_ack=True
-        )
 
     def start(self):
         print(f"{self._name} carrier started operating")
@@ -47,10 +44,8 @@ class Carrier:
 
     def _bind_services(self, queue_name, services):
         for service in services:
-            self._channel.queue_bind(
-                exchange=CARRIERS_REQUESTS_EXCHANGE,
-                queue=queue_name,
-                routing_key=service,
+            self._channel.basic_consume(
+                queue=service, on_message_callback=self._handle_message, auto_ack=True
             )
 
 
