@@ -4,7 +4,7 @@ from threading import Thread
 
 import pika
 
-from common import TRANSFER_TYPES, CARRIERS_REQUESTS_EXCHANGE, initialize_channel
+from common import TRANSFER_TYPES, CARRIERS_REQUESTS_EXCHANGE, initialize_channel, CARRIERS_REQUESTS_FANOUT
 
 
 class Agency:
@@ -29,7 +29,7 @@ class Agency:
         self._connection.add_callback_threadsafe(
             functools.partial(
                 self._channel.basic_publish,
-                exchange=CARRIERS_REQUESTS_EXCHANGE,
+                exchange=CARRIERS_REQUESTS_FANOUT,
                 routing_key=transfer_type,
                 properties=pika.BasicProperties(
                     reply_to=self._callback_queue, correlation_id=str(request_id)
