@@ -54,6 +54,12 @@ class Agency:
         result = self._channel.queue_declare(queue="", exclusive=True)
         callback_queue = result.method.queue
 
+        self._channel.queue_bind(
+            exchange=CARRIERS_REQUESTS_EXCHANGE,
+            queue=callback_queue,
+            routing_key=callback_queue,
+        )
+
         self._channel.basic_consume(
             queue=callback_queue,
             on_message_callback=self._handle_message,
