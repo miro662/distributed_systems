@@ -4,7 +4,13 @@ from threading import Thread
 
 import pika
 
-from common import TRANSFER_TYPES, CARRIERS_REQUESTS_EXCHANGE, initialize_channel, CARRIERS_REQUESTS_FANOUT
+from common import (
+    TRANSFER_TYPES,
+    CARRIERS_REQUESTS_EXCHANGE,
+    initialize_channel,
+    CARRIERS_REQUESTS_FANOUT,
+    ADMIN_MESSAGES_EXCHANGE,
+)
 
 
 class Agency:
@@ -49,6 +55,8 @@ class Agency:
         message = str(body, encoding="utf-8").split(";")
         if message[0] == "confirmation":
             print(f"Recieved confirmation of transfer, id = {message[1]}")
+        if message[0] == "admin":
+            print(f"Admin: {message[1]}")
 
     def _initialize_callback_queue(self):
         result = self._channel.queue_declare(queue="", exclusive=True)
@@ -58,6 +66,16 @@ class Agency:
             exchange=CARRIERS_REQUESTS_EXCHANGE,
             queue=callback_queue,
             routing_key=callback_queue,
+        )
+
+        self._channel.queue_bind(
+            exchange=ADMIN_MESSAGES_EXCHANGE,
+            queue=callback_queue,
+            routing_key="agency",
+        )
+
+        self._channel.queue_bind(
+            exchange=ADMIN_MESSAGES_EXCHANGE, queue=callback_queue, routing_key="both",
         )
 
         self._channel.basic_consume(
