@@ -2,7 +2,7 @@ import sys
 
 import pika
 
-from common import TRANSFER_TYPES, initialize_channel, CARRIERS_RESPONSES_FANOUT
+from common import TRANSFER_TYPES, initialize_channel, CARRIERS_RESPONSES_FANOUT, ADMIN_MESSAGES_EXCHANGE
 
 
 class Carrier:
@@ -36,10 +36,24 @@ class Carrier:
                 ),
                 body=";".join(confirmation_message),
             )
+        elif message[0] == "admin":
+            print(f"Admin: {message[1]}")
 
     def _initialize_channel(self):
         result = self._channel.queue_declare(queue="", exclusive=True)
         queue_name = result.method.queue
+
+        self._channel.basic_consume(
+            queue=queue_name, on_message_callback=self._handle_message, auto_ack=True
+        )
+
+        for key in ('carrier', 'both'):
+            self._channel.queue_bind(
+                exchange=ADMIN_MESSAGES_EXCHANGE,
+                queue=queue_name,
+                routing_key=key
+            )
+
         return queue_name
 
     def _bind_services(self, queue_name, services):

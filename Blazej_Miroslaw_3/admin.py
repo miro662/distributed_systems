@@ -9,6 +9,7 @@ from common import (
 )
 
 connection, channel = initialize_channel()
+ADMIN_MESSAGES_TARGETS = ('agency', 'carrier', 'both')
 
 
 def on_message(ch, method, properties, body):
@@ -24,6 +25,10 @@ def handle_commands():
         command = input()
         split_command = command.split(" ")
         topic, message_content = (split_command[0], " ".join(split_command[1:]))
+
+        if topic not in ADMIN_MESSAGES_TARGETS:
+            print(f"Unsupproted topic: {topic}, supported topics: {', '.join(ADMIN_MESSAGES_TARGETS)}")
+
         message = ("admin", message_content)
 
         connection.add_callback_threadsafe(
