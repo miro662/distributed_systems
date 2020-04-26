@@ -76,13 +76,9 @@ namespace Server
         public override void setMode(SmartHouse.Mode newMode, Current current = null) => this.mode = newMode;
     }
 
-    interface IServantSource {
-        Ice.Object GetServant();
-    }
-
     delegate Ice.Object ServantFactory();
 
-    class LazyServant : IServantSource {
+    class LazyServant {
         private bool instantiated;
         private Ice.Object servant;
         private ServantFactory factory;
@@ -104,7 +100,7 @@ namespace Server
 
     class SmartHouseServantLocator : ServantLocator
     {
-        private Dictionary<string, IServantSource> servants = new Dictionary<string, IServantSource>();
+        private Dictionary<string, LazyServant> servants = new Dictionary<string, LazyServant>();
 
         public void deactivate(string category) {}
 
