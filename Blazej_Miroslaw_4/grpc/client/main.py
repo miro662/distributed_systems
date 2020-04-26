@@ -10,4 +10,8 @@ if __name__ == "__main__":
 
     request = ListCitiesMessage()
     cities_list = stub.ListCities(request)
-    pprint(cities_list)
+    for city in cities_list.cities:
+        print(city)
+
+    for message in stub.Subscribe(cities_list):
+        pprint(message)
