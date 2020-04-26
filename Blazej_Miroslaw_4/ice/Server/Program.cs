@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Ice;
 
 namespace Server
@@ -71,6 +72,51 @@ namespace Server
         public override void setMode(SmartHouse.Mode newMode, Current current = null) => this.mode = newMode;
     }
 
+    interface IServantSource {
+        Ice.Object GetServant();
+    }
+
+    class LazyServant<T> : IServantSource where T: Ice.Object, new() {
+        private bool instantiated;
+        private T servant;
+
+        public Ice.Object GetServant()
+        {
+            if (!instantiated)
+            {
+                servant = new T();
+                instantiated = true;
+            }
+            return servant;
+        }
+    }
+
+    class SmartHouseServantLocator : ServantLocator
+    {
+        private Dictionary<string, IServantSource> servants = new Dictionary<string, IServantSource>();
+
+        public void deactivate(string category) {}
+
+        public void finished(Current curr, Ice.Object servant, object cookie) {}
+
+        public Ice.Object locate(Current curr, out object cookie)
+        {
+            cookie = null;
+            return servants.GetValueOrDefault(curr.id.name)?.GetServant();
+        }
+
+        public SmartHouseServantLocator() {
+            servants.Add("Bulbulator1", new LazyServant<BulbulatorI>());
+            servants.Add("Bulbulator2", new LazyServant<BulbulatorI>());
+
+            servants.Add("Bulb", new LazyServant<LightBulbI>());
+            servants.Add("RGBBulb", new LazyServant<RGBBulbI>());
+            servants.Add("StroboscopeBulb", new LazyServant<StroboscopeBulbI>());
+
+            servants.Add("Thermometer", new LazyServant<ThermometerI>());
+        }
+    }
+
     class Program
     {
         public static int Main(string[] args)
@@ -82,7 +128,8 @@ namespace Server
                     var adapter =
                         communicator.createObjectAdapterWithEndpoints("SmartHouseAdapter", "default -h localhost -p 10000");
                     
-                    adapter.add(new BulbulatorI(), Ice.Util.stringToIdentity("Bulbulator1"));
+                    SmartHouseServantLocator sl = new SmartHouseServantLocator();
+                    adapter.addServantLocator(sl, "");
                     adapter.activate();
                     communicator.waitForShutdown();
                 }
