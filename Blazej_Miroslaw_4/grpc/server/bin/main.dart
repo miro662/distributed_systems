@@ -24,11 +24,9 @@ class WeatherService extends WeatherServiceBase {
   }
 
   @override
-  Stream<WeatherData> subscribe(ServiceCall call, CitiesList request) {
-    return eventsStream.where(
-      (change) => request.cities.contains(change.city)
-    );
-  }
+  Stream<WeatherData> subscribe(ServiceCall call, CitiesList request) => eventsStream.where(
+    (change) => request.cities.contains(change.city)
+  );
 }
 
 class World {
@@ -74,6 +72,8 @@ void handleCommand(String command, World world) {
     print('help - prints this message');
     print('cities - prints available cities');
     print('alter <city_name> <param> <value> - change params in city');
+  } else if (commandName == 'cities') {
+    print(world.cityNames.join(', '));
   } else if (commandName == 'alter') {
     if (splitCommand.length != 4) {
       print('insufficient parameters');

@@ -2,12 +2,14 @@ from generated.service_pb2 import ListCitiesMessage, CitiesList, WeatherData
 from generated.service_pb2_grpc import WeatherServiceStub
 import grpc
 import sys
+import time
+import functools
 from typing import Iterable
 from pprint import pprint
 
 
 def connect_to_service(target: str) -> WeatherServiceStub:
-    channel = grpc.insecure_channel("localhost:8080")
+    channel = grpc.insecure_channel(target)
     stub = WeatherServiceStub(channel)
     return stub
 
@@ -18,9 +20,26 @@ def list_cities(service: WeatherServiceStub):
     print(", ".join(cities_list.cities))
 
 
+def subscribe_wrapper(wrapped):
+    close_stream = False
+    reestablishment_time = 0.25
+    while not close_stream:
+        try:
+            for message in wrapped():
+                reestablishment_time = 0.25
+                yield message
+            close_stream = True
+        except KeyboardInterrupt:
+            close_stream = True
+        except grpc.RpcError as e:
+            print(f"connection error, re-establishment attempt in {reestablishment_time}...", file=sys.stderr)
+            time.sleep(reestablishment_time)
+            reestablishment_time *= 2
+
+
 def subscribe(service: WeatherServiceStub, cities: Iterable[str]):
     cities_list = CitiesList(cities=cities)
-    for message in service.Subscribe(cities_list):
+    for message in subscribe_wrapper(functools.partial(service.Subscribe, cities_list)):
         print_message(message)
 
 
