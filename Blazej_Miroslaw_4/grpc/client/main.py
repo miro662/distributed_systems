@@ -1,4 +1,4 @@
-from generated.service_pb2 import ListCitiesMessage, CitiesList
+from generated.service_pb2 import ListCitiesMessage, CitiesList, WeatherData
 from generated.service_pb2_grpc import WeatherServiceStub
 import grpc
 import sys
@@ -20,9 +20,19 @@ def list_cities(service: WeatherServiceStub):
 
 def subscribe(service: WeatherServiceStub, cities: Iterable[str]):
     cities_list = CitiesList(cities=cities)
-
     for message in service.Subscribe(cities_list):
-        pprint(message)
+        print_message(message)
+
+
+def print_message(message: WeatherData):
+    print(f"city: {message.city}")
+    if hasattr(message, "weatherType"):
+        print(f"type: {message.weatherType}")
+    if hasattr(message, "temperature"):
+        print(f"temperature: {message.temperature}")
+    if hasattr(message, "humidity"):
+        print(f"humidity: {message.humidity}")
+    print()
 
 
 if __name__ == "__main__":
