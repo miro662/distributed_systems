@@ -9,7 +9,7 @@ namespace Server
         public override string mumble(Current current = null)
         {
             var message = "bul bul bul";
-            Console.WriteLine(message);
+            Console.WriteLine("[" + current.id.name + "] " + message);
             return message;
         }
     }
@@ -42,12 +42,16 @@ namespace Server
     {
         private SmartHouse.Range range = new SmartHouse.Range(-50.0f, 150.0f);
 
+        public ThermometerI(SmartHouse.Range range) {
+            this.range = range;
+        }
+
         public override SmartHouse.Range getSuportedRange(Current current = null) => range;
 
         public override float getTemperature(Current current = null)
         {
             Random rng = new Random();
-            return ((float) rng.NextDouble() + range.min) * (range.max - range.min);
+            return ((float) rng.NextDouble()) * (range.max - range.min) + range.min;
         }
     }
 
@@ -76,15 +80,22 @@ namespace Server
         Ice.Object GetServant();
     }
 
-    class LazyServant<T> : IServantSource where T: Ice.Object, new() {
+    delegate Ice.Object ServantFactory();
+
+    class LazyServant : IServantSource {
         private bool instantiated;
-        private T servant;
+        private Ice.Object servant;
+        private ServantFactory factory;
+
+        public LazyServant(ServantFactory factory) {
+            this.factory = factory;
+        }
 
         public Ice.Object GetServant()
         {
             if (!instantiated)
             {
-                servant = new T();
+                servant = this.factory();
                 instantiated = true;
             }
             return servant;
@@ -106,14 +117,15 @@ namespace Server
         }
 
         public SmartHouseServantLocator() {
-            servants.Add("Bulbulator1", new LazyServant<BulbulatorI>());
-            servants.Add("Bulbulator2", new LazyServant<BulbulatorI>());
+            servants.Add("Bulbulator1", new LazyServant(() => new BulbulatorI()));
+            servants.Add("Bulbulator2", new LazyServant(() => new BulbulatorI()));
 
-            servants.Add("Bulb", new LazyServant<LightBulbI>());
-            servants.Add("RGBBulb", new LazyServant<RGBBulbI>());
-            servants.Add("StroboscopeBulb", new LazyServant<StroboscopeBulbI>());
+            servants.Add("Bulb", new LazyServant(() => new LightBulbI()));
+            servants.Add("RGBBulb", new LazyServant(() => new RGBBulbI()));
+            servants.Add("StroboscopeBulb", new LazyServant(() => new StroboscopeBulbI()));
 
-            servants.Add("Thermometer", new LazyServant<ThermometerI>());
+            servants.Add("Thermometer1", new LazyServant(() => new ThermometerI(new SmartHouse.Range(-50.0f, 50.0f))));
+            servants.Add("Thermometer2", new LazyServant(() => new ThermometerI(new SmartHouse.Range(0.0f, 100.0f))));
         }
     }
 

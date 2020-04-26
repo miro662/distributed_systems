@@ -45,8 +45,25 @@ def mumble(self):
     print(self._stub.mumble())
 
 
+class ThermometerClient(Client):
+    def get_stub(self, base):
+        return SmartHouse.ThermometerPrx.checkedCast(base)
+    
+
+@ThermometerClient.command
+def temperature(self):
+    print(f"temperatue: {self._stub.getTemperature()}")
+
+
+@ThermometerClient.command
+def range(self):
+    temp_range = self._stub.getSuportedRange()
+    print(f"from {temp_range.min} to {temp_range.max}")
+
+
 AVAILABLE_TYPES = {
-    'bulbulator': BulbulatorClient
+    'bulbulator': BulbulatorClient,
+    'thermometer': ThermometerClient,
 }
 
 if __name__ == '__main__':
