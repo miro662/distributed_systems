@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+service WeatherService {
+    rpc ListCities(ListCitiesMessage) returns (CitiesList) {}
+    rpc Subscribe(CitiesList) returns (stream WeatherData) {}
+}
+
+message ListCitiesMessage {}
+
+message CitiesList {
+    repeated string cities = 1;
+}
+
+enum WeatherType {
+    CLEAR = 0;
+    CLOUDY = 1;
+    RAIN = 2;
+    THUNDERSTORM = 3;
+}
+
+message WeatherData {
+    string city = 1;
+    WeatherType weatherType = 2;
+    float temperature = 3;
+    float humidity = 4;
+}
