@@ -1,10 +1,10 @@
 import sys, Ice
-import Demo
+import SmartHouse
 
 with Ice.initialize(sys.argv) as communicator:
-    base = communicator.stringToProxy("SimplePrinter:default -p 10000")
-    printer = Demo.PrinterPrx.checkedCast(base)
-    if not printer:
+    base = communicator.stringToProxy("Bulbulator1:default -p 10000")
+    bulbulator = SmartHouse.BulbulatorPrx.checkedCast(base)
+    if not bulbulator:
         raise RuntimeError("Invaild proxy")
 
-    printer.printSting("Hello world!")
+    bulbulator.mumble()

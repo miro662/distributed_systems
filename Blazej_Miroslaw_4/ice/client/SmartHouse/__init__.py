@@ -2,9 +2,9 @@
 #
 
 import Ice
-Ice.updateModule("Demo")
+Ice.updateModule("SmartHouse")
 
 # Modules:
-import Printer_ice
+import SmartHouse_ice
 
 # Submodules:
